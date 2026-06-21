@@ -1,14 +1,36 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>4RunnerOS</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ESP_BlackBox</title>
     <style>
         body { background: #0a0a0c; color: #00f5d4; font-family: monospace; padding: 20px; }
+        .data-box { border: 1px solid #00f5d4; padding: 10px; margin: 10px 0; }
     </style>
 </head>
 <body>
     <h1>4RunnerOS Telemetry</h1>
-    <p>System Online.</p>
+    <div class="data-box">
+        <p>Temp: <span id="temp">--</span> °C</p>
+        <p>Pressure: <span id="press">--</span> hPa</p>
+    </div>
+    <div class="data-box">
+        <p>Accel X: <span id="accelX">--</span></p>
+        <p>GPS Lat/Lng: <span id="gps">--</span></p>
+    </div>
+
+    <script>
+        function updateTelemetry() {
+            fetch('/data')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('temp').innerText = data.temp?.toFixed(1) ?? '--';
+                    document.getElementById('press').innerText = data.press?.toFixed(0) ?? '--';
+                    document.getElementById('accelX').innerText = data.accelX?.toFixed(2) ?? '--';
+                    document.getElementById('gps').innerText = data.lat + ", " + data.lng;
+                })
+                .catch(err => console.error("Data fetch failed", err));
+        }
+        setInterval(updateTelemetry, 2000);
+    </script>
 </body>
-</html>s
+</html>
