@@ -1,57 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>ESP_BlackBox</title>
+    <link rel="icon" href="data:,">
     <style>
-        body { background: #0a0a0c; color: #00f5d4; font-family: monospace; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
-        .data-box { border: 1px solid #00f5d4; padding: 10px; }
+        body { margin: 0; background: #0a0a0c; color: #00f5d4; font-family: monospace; overflow: hidden; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
+        #ui { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 15px; border: 1px solid #00f5d4; pointer-events: none; }
     </style>
+    <script src="three.min.js"></script>
+    <script src="GLTFLoader.js"></script>
+    <script src="OrbitControls.js"></script>
 </head>
 <body>
-    <h1>ESP_BlackBox</h1>
-    <div class="grid">
-        <div class="data-box">
-            <h3>Env</h3>
-            <p>Temp: <span id="temp">--</span>°C</p>
-            <p>Pres: <span id="press">--</span> hPa</p>
-            <p>Time: <span id="time">--</span></p>
-        </div>
-        <div class="data-box">
-            <h3>Accel (G)</h3>
-            <p>X:<span id="accX">--</span> Y:<span id="accY">--</span> Z:<span id="accZ">--</span></p>
-            <h3>Gyr (deg/s)</h3>
-            <p>X:<span id="gyrX">--</span> Y:<span id="gyrY">--</span> Z:<span id="gyrZ">--</span></p>
-        </div>
-        <div class="data-box">
-            <h3>Mag (uT)</h3>
-            <p>X:<span id="magX">--</span> Y:<span id="magY">--</span> Z:<span id="magZ">--</span></p>
-            <h3>GPS</h3>
-            <p><span id="gps">--</span></p>
-        </div>
+    <div id="canvas-container"></div>
+    <div id="ui">
+        <h1>BlackBox</h1>
+        <p>Temp: <span id="temp">--</span>°C</p>
+        <p>GPS: <span id="gps">--</span></p>
     </div>
 
     <script>
-        function updateTelemetry() {
-            fetch('/data')
-                .then(r => r.json())
-                .then(data => {
-                    document.getElementById('temp').innerText = data.temp?.toFixed(3);
-                    document.getElementById('press').innerText = data.press?.toFixed(2);
-                    document.getElementById('time').innerText = data.time;
-                    document.getElementById('accX').innerText = data.accX?.toFixed(3);
-                    document.getElementById('accY').innerText = data.accY?.toFixed(3);
-                    document.getElementById('accZ').innerText = data.accZ?.toFixed(3);
-                    document.getElementById('gyrX').innerText = data.gyrX?.toFixed(3);
-                    document.getElementById('gyrY').innerText = data.gyrY?.toFixed(3);
-                    document.getElementById('gyrZ').innerText = data.gyrZ?.toFixed(3);
-                    document.getElementById('magX').innerText = data.magX?.toFixed(2);
-                    document.getElementById('magY').innerText = data.magY?.toFixed(2);
-                    document.getElementById('magZ').innerText = data.magZ?.toFixed(2);
-                    document.getElementById('gps').innerText = data.lat.toFixed(5) + ", " + data.lng.toFixed(5);
-                });
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 10);
+        const renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+        
+        const light = new THREE.DirectionalLight(0xffffff, 2);
+        light.position.set(5, 5, 5);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        let car;
+        new THREE.GLTFLoader().load('car.glb', (gltf) => { car = gltf.scene; scene.add(car); });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
         }
-        setInterval(updateTelemetry, 1000); // Increased frequency
+        animate();
+
+        setInterval(async () => {
+            const res = await fetch('/data');
+            const data = await res.json();
+            document.getElementById('temp').innerText = data.temp?.toFixed(1);
+            document.getElementById('gps').innerText = data.lat?.toFixed(4) + ", " + data.lng?.toFixed(4);
+            
+            if(car) {
+                // Apply absolute tilt
+                car.rotation.x = THREE.MathUtils.degToRad(data.pitch);
+                car.rotation.z = THREE.MathUtils.degToRad(data.roll);
+            }
+        }, 200);
     </script>
 </body>
 </html>
