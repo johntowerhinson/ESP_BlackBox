@@ -1,14 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>4RunnerOS</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ESP_BlackBox</title>
     <style>
-        body { background: #0a0a0c; color: #00f5d4; font-family: monospace; padding: 20px; }
+        body { background: #0a0a0c; color: #00f5d4; font-family: monospace; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .data-box { border: 1px solid #00f5d4; padding: 10px; }
     </style>
 </head>
 <body>
-    <h1>4RunnerOS Telemetry</h1>
-    <p>System Online.</p>
+    <h1>ESP_BlackBox</h1>
+    <div class="grid">
+        <div class="data-box">
+            <h3>Env</h3>
+            <p>Temp: <span id="temp">--</span>°C</p>
+            <p>Pres: <span id="press">--</span> hPa</p>
+            <p>Time: <span id="time">--</span></p>
+        </div>
+        <div class="data-box">
+            <h3>Accel (G)</h3>
+            <p>X:<span id="accX">--</span> Y:<span id="accY">--</span> Z:<span id="accZ">--</span></p>
+            <h3>Gyr (deg/s)</h3>
+            <p>X:<span id="gyrX">--</span> Y:<span id="gyrY">--</span> Z:<span id="gyrZ">--</span></p>
+        </div>
+        <div class="data-box">
+            <h3>Mag (uT)</h3>
+            <p>X:<span id="magX">--</span> Y:<span id="magY">--</span> Z:<span id="magZ">--</span></p>
+            <h3>GPS</h3>
+            <p><span id="gps">--</span></p>
+        </div>
+    </div>
+
+    <script>
+        function updateTelemetry() {
+            fetch('/data')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('temp').innerText = data.temp?.toFixed(3);
+                    document.getElementById('press').innerText = data.press?.toFixed(2);
+                    document.getElementById('time').innerText = data.time;
+                    document.getElementById('accX').innerText = data.accX?.toFixed(3);
+                    document.getElementById('accY').innerText = data.accY?.toFixed(3);
+                    document.getElementById('accZ').innerText = data.accZ?.toFixed(3);
+                    document.getElementById('gyrX').innerText = data.gyrX?.toFixed(3);
+                    document.getElementById('gyrY').innerText = data.gyrY?.toFixed(3);
+                    document.getElementById('gyrZ').innerText = data.gyrZ?.toFixed(3);
+                    document.getElementById('magX').innerText = data.magX?.toFixed(2);
+                    document.getElementById('magY').innerText = data.magY?.toFixed(2);
+                    document.getElementById('magZ').innerText = data.magZ?.toFixed(2);
+                    document.getElementById('gps').innerText = data.lat.toFixed(5) + ", " + data.lng.toFixed(5);
+                });
+        }
+        setInterval(updateTelemetry, 1000); // Increased frequency
+    </script>
 </body>
-</html>s
+</html>
